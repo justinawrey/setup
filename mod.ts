@@ -1,11 +1,11 @@
 import { Octokit } from "https://esm.sh/@octokit/core@4.0.5";
 import { restEndpointMethods } from "https://esm.sh/@octokit/plugin-rest-endpoint-methods@6.6.2";
 import { bold, cyan } from "https://deno.land/std@0.159.0/fmt/colors.ts";
-import { bash } from "./bash.ts";
+import { bash } from "https://deno.land/x/bash@0.2.0/mod.ts";
 
-const logHeader: typeof console.log = (message) => {
+function logHeader(message: string) {
   console.log(bold(cyan(message)));
-};
+}
 
 if (Deno.args.length !== 1) {
   console.log("Project name must be provided");
@@ -30,11 +30,19 @@ const octokit = new restOctokit({
   auth: Deno.env.get("GITHUB_TOKEN"),
 });
 
+logHeader("Authenticating with Github...");
+const { status, data: user } = await octokit.rest.users.getAuthenticated();
+if (status !== 200) {
+  console.log("Error: could not authenticate with Github");
+  Deno.exit(0);
+}
+console.log(`Authenticated as ${bold(user.login)}\n`);
+
 logHeader(`Creating project ${bold(project)} on Github...`);
 const repoRes = await octokit.rest.repos.createUsingTemplate({
   template_owner: "justinawrey",
   template_repo: "boiler",
-  owner: "justinawrey",
+  owner: user.login,
   name: project,
 });
 
@@ -46,7 +54,7 @@ if (repoRes.status !== 201) {
 console.log(`Project ${bold(project)} created on Github!\n`);
 
 logHeader("Cloning project locally...");
-await bash(`git clone https://github.com/justinawrey/${project}.git`);
+await bash(`git clone https://github.com/${user.login}/${project}.git`);
 Deno.chdir(project);
 await bash(`echo '# ${project}' > README.md`);
 await bash("git commit -am 'commit readme'");
@@ -56,9 +64,9 @@ console.log(`Project cloned locally!\n`);
 
 logHeader("Setting up webhook for syncing to deno.land/x...");
 const webhookRes = await octokit.rest.repos.createWebhook({
-  owner: "justinawrey",
+  owner: user.login,
   repo: project,
-  events: ["push"],
+  events: ["create", "push"],
   config: {
     url: `https://api.deno.land/webhook/gh/${project}`,
     content_type: "json",
@@ -72,8 +80,6 @@ if (webhookRes.status !== 201) {
 
 console.log("Webhook sucessfully created!");
 console.log(`Project ${bold(project)} set up and ready to go! 🥳`);
-
-// TODO: better rollbacks
-// TODO: not hardcode my username
-// TODO: publish bash as own project
-// TODO: figure out correct webhook event
+console.log(
+  `View it here: ${bold(`https://github.com/${user.login}/${project}`)}`,
+);
