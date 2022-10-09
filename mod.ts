@@ -72,3 +72,8 @@ if (webhookRes.status !== 201) {
 
 console.log("Webhook sucessfully created!");
 console.log(`Project ${bold(project)} set up and ready to go! 🥳`);
+
+// TODO: better rollbacks
+// TODO: not hardcode my username
+// TODO: publish bash as own project
+// TODO: figure out correct webhook event
