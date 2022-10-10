@@ -81,6 +81,12 @@ const webhookRes = await octokit.rest.repos.createWebhook({
 
 if (webhookRes.status !== 201) {
   console.log("Error: could not add webhook");
+
+  await bash(`rm -rf ${project}`);
+  await octokit.rest.repos.delete({
+    owner: user.login,
+    repo: project,
+  });
   Deno.exit(0);
 }
 
