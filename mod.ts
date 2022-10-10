@@ -56,7 +56,13 @@ console.log(`Project ${bold(project)} created on Github!\n`);
 logHeader("Cloning project locally...");
 await bash(`git clone https://github.com/${user.login}/${project}.git`);
 Deno.chdir(project);
-await bash(`echo '# ${project}' > README.md`);
+await bash(`echo '# ${project}\n' > README.md`);
+await bash(
+  `echo '[![deno module](https://shield.deno.dev/x/${project})](https://deno.land/x/${project})' >> README.md`,
+);
+await bash(
+  `echo '[![release](https://github.com/${user.login}/${project}/actions/workflows/release.yml/badge.svg)](https://github.com/${user.login}/${project}/actions/workflows/release.yml)' >> README.md`,
+);
 await bash("git commit -am 'commit readme'");
 await bash("git push origin main");
 Deno.chdir("..");
